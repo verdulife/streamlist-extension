@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 dark:bg-gray-600 rounded;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500 dark:bg-gray-500;
+}
+
+/* Progress bar styling */
+.progress-bar {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, #ef4444 0%, #ef4444 var(--progress-width, 0%), #404040 var(--progress-width, 0%), #404040 100%);
+  outline: none;
+  cursor: pointer;
+  transition: height 0.2s ease;
+}
+
+.progress-bar:hover {
+  height: 6px;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) - hide thumb */
+.progress-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* Firefox - hide thumb */
+.progress-bar::-moz-range-thumb {
+  width: 0;
+  height: 0;
+  display: none;
+  border: none;
+  background: transparent;
+}
+
+/* Firefox track */
+.progress-bar::-moz-range-track {
+  background: transparent;
+  border: none;
+}
+
+.progress-bar::-moz-range-progress {
+  background: #ef4444;
+}

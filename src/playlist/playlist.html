@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Playlist Player</title>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="bg-black text-white overflow-hidden h-screen">
+  <!-- Notification Banner -->
+  <div id="notificationBanner"
+    class="hidden fixed top-0 left-0 right-0 z-[60] bg-red-600 border-b border-red-700 px-4 py-3 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+      </svg>
+      <div>
+        <p id="notificationText" class="font-medium"></p>
+      </div>
+    </div>
+    <button id="closeNotificationBtn" class="flex-shrink-0 text-red-100 hover:text-white transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+
+  <!-- Header -->
+  <header class="bg-black border-b border-gray-900 z-50 px-4 py-2 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <svg class="w-6 h-6 text-youtube-red" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M10 8.64L15.27 12 10 15.36V8.64M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
+      </svg>
+      <h1 class="text-sm font-semibold">Streamlist</h1>
+    </div>
+    <button id="clearAllBtn" class="text-xs text-red-400 hover:text-red-300 flex items-center gap-1">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
+    </button>
+  </header>
+
+  <!-- Main Content -->
+  <div class="h-[calc(100vh-48px)] flex flex-col lg:flex-row">
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden flex-1 flex items-center justify-center">
+      <div class="max-w-md text-center">
+        <svg class="w-24 h-24 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+        <h2 class="text-2xl font-semibold mb-2">No Videos in Playlist</h2>
+        <p class="text-gray-400 mb-6 text-sm">
+          Navigate to a video page, play it, and use the extension to add videos to your playlist
+        </p>
+        <button id="closeTabBtn" class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded transition-colors text-sm">
+          Close Tab
+        </button>
+      </div>
+    </div>
+
+    <!-- Player Content -->
+    <div id="playerContent" class="hidden flex-1 flex flex-col overflow-hidden">
+      <!-- Video Container -->
+      <div class="flex-1 bg-black relative group cursor-pointer" id="videoContainer" title="Click to play/pause">
+        <!-- Video Player -->
+        <video id="videoPlayer" class="w-full h-full object-contain bg-black" autoplay>
+          Your browser does not support the video tag.
+        </video>
+
+        <!-- Video Controls Overlay -->
+        <div id="videoControls" class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4">
+          <!-- Progress Bar -->
+          <input type="range" id="progressBar" class="w-full h-1 cursor-pointer appearance-none mb-3 progress-bar"
+            value="0" min="0" max="100">
+
+          <!-- Controls -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <button id="playPauseBtn2" class="p-2 hover:bg-gray-700 rounded transition-colors"
+                title="Play/Pause">
+                <svg id="playIcon2" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+                <svg id="pauseIcon2" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                </svg>
+              </button>
+
+              <div class="flex items-center gap-2 ml-2">
+                <span id="currentTime" class="text-xs">0:00</span>
+                <span class="text-xs">/</span>
+                <span id="duration" class="text-xs">0:00</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button id="loopBtn2" class="p-2 hover:bg-gray-700 rounded transition-colors" title="Loop Playlist">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+
+              <input type="range" id="volumeSlider" class="w-24 h-1 bg-gray-700 rounded-full cursor-pointer"
+                value="100" min="0" max="100">
+
+              <button id="fullscreenBtn" class="p-2 hover:bg-gray-700 rounded transition-colors" title="Fullscreen">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Video Info -->
+      <div class="bg-youtube-sidebar border-b border-gray-900 px-4 py-3 flex items-start justify-between">
+        <div class="flex-1 min-w-0">
+          <h2 id="currentVideoTitle" class="font-semibold text-sm mb-1 truncate">
+            Loading...
+          </h2>
+          <div class="flex items-center gap-3 text-xs text-gray-400">
+            <span id="currentVideoDomain">--</span>
+            <span>•</span>
+            <span id="currentVideoType" class="uppercase">--</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 ml-4">
+          <button id="playPauseBtn" class="p-2 rounded hover:bg-gray-700 transition-colors" title="Play/Pause">
+            <svg id="playIcon" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            <svg id="pauseIcon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+            </svg>
+          </button>
+
+          <button id="loopBtn" class="p-2 rounded hover:bg-gray-700 transition-colors" title="Loop Playlist">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+
+          <button id="prevBtn"
+            class="p-2 rounded hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Previous">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
+            </svg>
+          </button>
+
+          <button id="nextBtn"
+            class="p-2 rounded hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Next">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+            </svg>
+          </button>
+
+          <button id="closeTabBtn2" class="p-2 rounded hover:bg-gray-700 transition-colors" title="Close">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Playlist Sidebar -->
+    <div class="hidden lg:block w-80 bg-youtube-sidebar border-l border-gray-900 flex flex-col max-h-full">
+      <div class="p-4 border-b border-gray-900">
+        <div class="flex items-center justify-between">
+          <h3 class="font-semibold text-sm">Queue</h3>
+          <span id="queueCount" class="text-xs text-gray-400">0 videos</span>
+        </div>
+      </div>
+
+      <!-- Playlist Items -->
+      <div id="playlistItems" class="flex-1 overflow-y-auto space-y-1 p-2">
+        <!-- Items will be inserted here by JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./playlist.js"></script>
+</body>
+
+</html>
