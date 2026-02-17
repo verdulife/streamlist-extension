@@ -12,8 +12,6 @@ import {
 } from '../utils/storage.js';
 import { extractVideoInfo, generateThumbnailColor } from '../utils/detector.js';
 
-console.log('🎬 Video Playlist Extension - Service Worker Started');
-
 // Track active tabs to get page info
 const tabInfo = new Map();
 
@@ -61,9 +59,11 @@ chrome.webRequest.onHeadersReceived.addListener(
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const { cmd, data } = message;
 
-  console.log('📨 Message received:', cmd);
-
   switch (cmd) {
+    case 'register_playlist_tab':
+      handleRegisterPlaylistTab(data, sender);
+      break;
+
     case MESSAGES.VIDEO_DETECTED:
       handleVideoDetected(data, sender);
       break;
@@ -99,11 +99,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 /**
+ * Handle playlist tab registration
+ */
+async function handleRegisterPlaylistTab(data, sender) {
+  const tabId = sender.tab?.id;
+  if (tabId) {
+    await setPlaylistTabId(tabId);
+    console.log(`📌 Playlist tab registered: ${tabId}`);
+  }
+}
+
+/**
  * Handle video detected from content script
  */
 async function handleVideoDetected(videoInfo, sender) {
-  console.log('🎥 Video detected from content script:', videoInfo);
-
   const tabId = sender.tab?.id;
   if (tabId) {
     tabInfo.set(tabId, videoInfo);
@@ -166,7 +175,7 @@ async function handleAddToPlaylist(data, sendResponse) {
 
       const added = await addVideo(currentVideo);
       await updateBadge();
-      
+
       // Notify playlist tab if open
       if (added) {
         await notifyPlaylistUpdate(MESSAGES.VIDEO_ADDED, currentVideo);
@@ -176,7 +185,7 @@ async function handleAddToPlaylist(data, sendResponse) {
     } else {
       const added = await addVideo(video);
       await updateBadge();
-      
+
       // Notify playlist tab if open
       if (added) {
         await notifyPlaylistUpdate(MESSAGES.VIDEO_ADDED, video);
@@ -225,7 +234,7 @@ async function handleClearPlaylist(sendResponse) {
 
     // Clear tab info
     tabInfo.clear();
-    
+
     // Notify playlist tab if open
     await notifyPlaylistUpdate(MESSAGES.PLAYLIST_CLEARED, null);
 
@@ -244,7 +253,7 @@ async function handleRemoveVideo(data, sendResponse) {
     const { videoId } = data;
     const remaining = await removeVideo(videoId);
     await updateBadge();
-    
+
     // Notify playlist tab if open
     await notifyPlaylistUpdate(MESSAGES.VIDEO_REMOVED, { videoId });
 
@@ -316,7 +325,7 @@ updateBadge();
 async function notifyPlaylistUpdate(messageType, data) {
   try {
     const playlistTabId = await getPlaylistTabId();
-    
+
     if (playlistTabId) {
       // Send message without waiting for response to avoid conflicts
       chrome.tabs.sendMessage(playlistTabId, {
@@ -327,7 +336,7 @@ async function notifyPlaylistUpdate(messageType, data) {
         console.log('Playlist tab not responsive, clearing stored ID:', error.message);
         setPlaylistTabId(null);
       });
-      
+
       console.log(`📢 Notified playlist about ${messageType}`);
     }
   } catch (error) {
