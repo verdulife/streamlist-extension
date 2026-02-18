@@ -16,41 +16,45 @@
 
   <section class="grid grid-cols-[1fr_400px] flex-1">
     <main class="size-full flex flex-col">
-      <div class="relative w-full aspect-video bg-black group">
+      <div class="relative w-full aspect-video bg-black group/player">
         <video class="absolute inset-10 aspect-video scale-105 blur-3xl opacity-25" id="videoBlur"></video>
         <video class="relative w-full aspect-video" id="videoPlayer">
         </video>
 
         <footer
-          class="absolute inset-0 top-auto opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end gap-4"
+          class="absolute inset-0 top-auto opacity-0 group-hover/player:opacity-100 transition-opacity p-4 flex flex-col justify-end gap-2"
           id="videoFooter">
-          <div>
-            <input type="range" id="progressBar" class="w-full" min="0" max="100" value="0">
+          <div class="px-2">
+            <input type="range" id="progressBar" class="w-full accent-neutral-950" min="0" max="100" value="0">
           </div>
 
-          <div class="flex justify-between p-4" id="videoControls">
+          <div class="flex justify-between px-1" id="videoControls">
             <div class="flex" id="playPause">
-              <button class="size-10 p-2" title="Play">
+              <button class="size-8 p-2 bg-neutral-950/50 rounded" id="playBtn" title="Play">
                 <img class="size-full" src="/icons/play.svg" alt="Play">
               </button>
-              <button class="size-10 p-2" title="Pause">
+              <button class="hidden size-8 p-2 bg-neutral-950/50 rounded" id="pauseBtn" title="Pause">
                 <img class="size-full" src="/icons/pause.svg" alt="Pause">
               </button>
             </div>
 
-            <div class="flex" id="volumScreen">
-              <div class="flex" id="volume">
-                <button class="size-10 p-2" title="Volume">
+            <div class="flex bg-neutral-950/50 rounded" id="volumScreen">
+              <div class="relative flex group/volume" id="volume">
+                <button class="size-8 p-2" id="volumeBtn" title="Volume">
                   <img class="size-full" src="/icons/volume-on.svg" alt="Volume">
                 </button>
-                <button class="size-10 p-2" title="Mute">
+                <button class="hidden size-8 p-2" id="muteBtn" title="Mute">
                   <img class="size-full" src="/icons/volume-off.svg" alt="Volume">
                 </button>
 
-                <input type="range" id="volumeSlider" min="0" max="1" step="0.01">
+                <div
+                  class="absolute group-hover/volume:opacity-100 w-8 p-2 flex justify-center items-center bg-neutral-950/50 rounded bottom-[calc(100%+0.25rem)] left-0 opacity-0">
+                  <input class="[writing-mode:vertical-lr] [direction:rtl] [vertical-align:middle] accent-neutral-950"
+                    type="range" id="volumeSlider" min="0" max="1" step="0.01">
+                </div>
               </div>
 
-              <button class="size-10 p-2" title="Fullscreen">
+              <button class="size-8 p-2" id="fullscreenBtn" title="Fullscreen">
                 <img class="size-full" src="/icons/fullscreen.svg" alt="Fullscreen">
               </button>
             </div>
