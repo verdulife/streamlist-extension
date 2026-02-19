@@ -8,99 +8,90 @@
   <link rel="stylesheet" href="../styles.css">
 </head>
 
-<body class="w-80 bg-white dark:bg-gray-900">
-  <div class="p-4">
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-4">
-      <div class="flex items-center gap-2">
-        <svg class="w-6 h-6 text-youtube-red" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M10 8.64L15.27 12 10 15.36V8.64M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
-        </svg>
-        <h1 class="text-lg font-semibold text-gray-900 dark:text-white">Video Playlist</h1>
-      </div>
-      <span id="videoCount" class="text-xs bg-youtube-red text-white px-2 py-1 rounded-full">0</span>
+<body class="w-96 bg-neutral-950 text-neutral-200 font-mono flex flex-col">
+  <!-- Header -->
+  <header class="p-3 border-b border-neutral-900 flex-shrink-0">
+    <div class="flex items-center justify-between">
+      <img src="/icons/logo.svg" alt="Streamlist Logo" class="h-4">
+      <span id="videoCount" class="text-xs bg-neutral-800 text-neutral-300 px-2 py-1 rounded">0 videos</span>
     </div>
+  </header>
 
-    <!-- Current Video Info -->
-    <div id="currentVideoInfo" class="mb-4 hidden">
-      <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
-        <div class="flex items-start gap-3">
-          <div id="videoThumbnail" class="w-16 h-12 rounded flex-shrink-0 flex items-center justify-center">
-            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h3 id="videoTitle" class="text-sm font-medium text-gray-900 dark:text-white truncate">
-              Video detected
-            </h3>
-            <p id="videoDomain" class="text-xs text-gray-500 dark:text-gray-400 truncate">
-              Loading...
-            </p>
-          </div>
+  <main class="flex-1 overflow-y-auto flex flex-col min-h-0">
+    <div class="p-3">
+      <!-- Current Video Info -->
+      <div id="currentVideoInfo" class="mb-3 hidden">
+        <div class="bg-neutral-900 rounded p-2 mb-3">
+          <p class="text-xs text-neutral-500 uppercase tracking-wider mb-1">Current Video</p>
+          <h3 id="videoTitle" class="text-sm font-medium text-neutral-100 truncate mb-1">Video detected</h3>
+          <p id="videoDomain" class="text-xs text-neutral-400 truncate">Loading...</p>
         </div>
       </div>
-    </div>
 
-    <!-- No Video Message -->
-    <div id="noVideoMessage" class="mb-4">
-      <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-        <p class="text-sm text-yellow-800 dark:text-yellow-200">
-          <span class="font-medium">No video detected</span><br>
-          <span class="text-xs">Play a video on this page to capture it</span>
-        </p>
+      <!-- No Video Message -->
+      <div id="noVideoMessage" class="mb-3">
+        <div class="bg-neutral-900/50 border border-neutral-800 rounded p-2">
+          <p class="text-xs text-neutral-400">
+            <span class="font-medium block mb-1">No video detected</span>
+            <span class="text-neutral-500">Play a video on this page to capture it</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="space-y-2 mb-3">
+        <button id="addToPlaylistBtn"
+          class="w-full bg-neutral-800 hover:bg-neutral-700 disabled:bg-neutral-900 disabled:cursor-not-allowed text-neutral-100 text-sm py-2 px-3 rounded transition-colors flex items-center justify-center gap-2"
+          disabled>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          <span>Add to Playlist</span>
+        </button>
+
+        <button id="playNowBtn"
+          class="w-full bg-neutral-800 hover:bg-neutral-700 disabled:bg-neutral-900 disabled:cursor-not-allowed text-neutral-100 text-sm py-2 px-3 rounded transition-colors flex items-center justify-center gap-2"
+          disabled>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+          <span>Play Now</span>
+        </button>
+      </div>
+
+      <!-- Divider -->
+      <div class="border-b border-neutral-900 mb-3"></div>
+
+      <!-- Playlist Section -->
+      <div>
+        <p class="text-xs text-neutral-500 uppercase tracking-wider mb-2">Playlist</p>
+        <div id="playlistList" class="space-y-1 max-h-48 overflow-y-auto">
+          <!-- Videos will be added here -->
+        </div>
+        <p id="emptyPlaylistMsg" class="text-xs text-neutral-500 text-center py-3">No videos in playlist</p>
       </div>
     </div>
 
-    <!-- Action Buttons -->
-    <div class="space-y-2">
-      <!-- Add to Playlist Button -->
-      <button id="addToPlaylistBtn"
-        class="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-        disabled>
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Add to Playlist
-      </button>
-
-      <!-- Play Now Button -->
-      <button id="playNowBtn"
-        class="w-full bg-youtube-red hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-        disabled>
-        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M8 5v14l11-7z" />
-        </svg>
-        Play Now
-      </button>
-
-      <!-- Open Playlist Button (only shown if videos exist) -->
+    <!-- Footer Buttons -->
+    <div class="mt-auto p-3 border-t border-neutral-900 space-y-2 flex-shrink-0">
       <button id="openPlaylistBtn"
-        class="w-full bg-gray-700 hover:bg-gray-800 text-white font-medium py-2.5 px-4 rounded-lg transition-colors hidden items-center justify-center gap-2">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        class="w-full bg-neutral-800 hover:bg-neutral-700 text-neutral-100 text-sm py-2 px-3 rounded transition-colors hidden items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
         </svg>
-        Open Playlist
+        <span>Open Playlist</span>
       </button>
 
-      <!-- Clear Playlist Button (only shown if videos exist) -->
       <button id="clearPlaylistBtn"
-        class="w-full bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 font-medium py-2 px-4 rounded-lg transition-colors hidden items-center justify-center gap-2 text-sm">
+        class="w-full bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-red-400 text-sm py-2 px-3 rounded transition-colors hidden items-center justify-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
-        Clear Playlist
+        <span>Clear Playlist</span>
       </button>
     </div>
-
-    <!-- Footer -->
-    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-      <p class="text-xs text-gray-500 dark:text-gray-400 text-center">
-        Navigate to a video page and press play to capture
-      </p>
-    </div>
-  </div>
+  </main>
 
   <script type="module" src="./popup.js"></script>
 </body>

@@ -8,11 +8,12 @@ const noVideoMessage = document.getElementById('noVideoMessage');
 const videoCount = document.getElementById('videoCount');
 const videoTitle = document.getElementById('videoTitle');
 const videoDomain = document.getElementById('videoDomain');
-const videoThumbnail = document.getElementById('videoThumbnail');
 const addToPlaylistBtn = document.getElementById('addToPlaylistBtn');
 const playNowBtn = document.getElementById('playNowBtn');
 const openPlaylistBtn = document.getElementById('openPlaylistBtn');
 const clearPlaylistBtn = document.getElementById('clearPlaylistBtn');
+const playlistList = document.getElementById('playlistList');
+const emptyPlaylistMsg = document.getElementById('emptyPlaylistMsg');
 
 let currentVideo = null;
 let allVideos = [];
@@ -21,16 +22,74 @@ let allVideos = [];
  * Initialize popup
  */
 async function init() {
-  // Get videos from background
+  console.log('🎬 Initializing popup...');
+  
+  try {
+    // Get videos from background
+    const response = await chrome.runtime.sendMessage({
+      cmd: MESSAGES.GET_VIDEOS
+    });
+
+    console.log('📨 Response from background:', response);
+
+    if (response.success) {
+      currentVideo = response.currentVideo;
+      allVideos = response.allVideos;
+
+      console.log('✅ Data loaded:', { currentVideo, videosCount: allVideos.length });
+      updateUI();
+    } else {
+      console.error('❌ Failed to get videos:', response.error);
+    }
+  } catch (error) {
+    console.error('❌ Error during init:', error);
+  }
+}
+
+/**
+ * Render playlist items
+ */
+function renderPlaylistItems() {
+  console.log('🎬 Rendering playlist items, total:', allVideos.length);
+  
+  playlistList.innerHTML = '';
+
+  if (allVideos.length === 0) {
+    console.log('📭 No videos, showing empty message');
+    emptyPlaylistMsg.classList.remove('hidden');
+    return;
+  }
+
+  emptyPlaylistMsg.classList.add('hidden');
+
+  allVideos.forEach((video, index) => {
+    const item = document.createElement('div');
+    item.className = 'bg-neutral-900 hover:bg-neutral-800 rounded p-2 cursor-pointer transition-colors text-xs overflow-hidden';
+    item.innerHTML = `
+      <p class="text-neutral-100 truncate font-medium">${video.title || 'Untitled'}</p>
+      <p class="text-neutral-500 truncate text-xs mt-0.5">${video.domain || 'Unknown'}</p>
+    `;
+    item.addEventListener('click', () => {
+      playVideoByIndex(index);
+    });
+    playlistList.appendChild(item);
+  });
+  
+  console.log('✅ Rendered', allVideos.length, 'items');
+}
+
+/**
+ * Play video by index
+ */
+async function playVideoByIndex(index) {
   const response = await chrome.runtime.sendMessage({
-    cmd: MESSAGES.GET_VIDEOS
+    cmd: MESSAGES.PLAY_VIDEO,
+    data: { index }
   });
 
   if (response.success) {
-    currentVideo = response.currentVideo;
-    allVideos = response.allVideos;
-
-    updateUI();
+    // Actualizar UI después de reproducir
+    init();
   }
 }
 
@@ -38,11 +97,15 @@ async function init() {
  * Update UI based on current state
  */
 function updateUI() {
+  console.log('🎨 Updating UI...');
+  
   // Update video count
-  videoCount.textContent = allVideos.length;
+  videoCount.textContent = `${allVideos.length} ${allVideos.length === 1 ? 'video' : 'videos'}`;
+  console.log('📊 Video count:', allVideos.length);
 
   // Show/hide current video info
   if (currentVideo) {
+    console.log('📹 Current video found:', currentVideo.title);
     currentVideoInfo.classList.remove('hidden');
     noVideoMessage.classList.add('hidden');
 
@@ -50,15 +113,11 @@ function updateUI() {
     videoTitle.textContent = currentVideo.title || 'Untitled Video';
     videoDomain.textContent = currentVideo.domain || 'Unknown source';
 
-    // Set thumbnail color
-    if (currentVideo.thumbnailColor) {
-      videoThumbnail.style.backgroundColor = currentVideo.thumbnailColor;
-    }
-
     // Enable buttons
     addToPlaylistBtn.disabled = false;
     playNowBtn.disabled = false;
   } else {
+    console.log('❌ No current video');
     currentVideoInfo.classList.add('hidden');
     noVideoMessage.classList.remove('hidden');
 
@@ -67,18 +126,23 @@ function updateUI() {
     playNowBtn.disabled = true;
   }
 
-  // Show/hide playlist management buttons
+  // Show/hide playlist management buttons and render list
   if (allVideos.length > 0) {
+    console.log('✅ Showing playlist buttons');
     openPlaylistBtn.classList.remove('hidden');
     openPlaylistBtn.classList.add('flex');
     clearPlaylistBtn.classList.remove('hidden');
     clearPlaylistBtn.classList.add('flex');
   } else {
+    console.log('❌ Hiding playlist buttons');
     openPlaylistBtn.classList.add('hidden');
     openPlaylistBtn.classList.remove('flex');
     clearPlaylistBtn.classList.add('hidden');
     clearPlaylistBtn.classList.remove('flex');
   }
+
+  // Render playlist items
+  renderPlaylistItems();
 }
 
 /**
@@ -86,11 +150,13 @@ function updateUI() {
  */
 async function addToPlaylist() {
   addToPlaylistBtn.disabled = true;
+  const originalHTML = addToPlaylistBtn.innerHTML;
+
   addToPlaylistBtn.innerHTML = `
-    <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
     </svg>
-    Adding...
+    <span>Adding...</span>
   `;
 
   const response = await chrome.runtime.sendMessage({
@@ -101,45 +167,32 @@ async function addToPlaylist() {
   if (response.success) {
     // Show success feedback
     addToPlaylistBtn.innerHTML = `
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
       </svg>
-      Added!
+      <span>Added!</span>
     `;
-    addToPlaylistBtn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
-    addToPlaylistBtn.classList.add('bg-green-500');
+    addToPlaylistBtn.classList.add('bg-neutral-700');
 
     // Refresh UI
     setTimeout(async () => {
       await init();
-      addToPlaylistBtn.innerHTML = `
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-        </svg>
-        Add to Playlist
-      `;
-      addToPlaylistBtn.classList.remove('bg-green-500');
-      addToPlaylistBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+      addToPlaylistBtn.innerHTML = originalHTML;
+      addToPlaylistBtn.classList.remove('bg-neutral-700');
     }, 1000);
   } else {
     // Show error
     addToPlaylistBtn.innerHTML = `
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
       </svg>
-      ${response.error || 'Error'}
+      <span>Error</span>
     `;
-    addToPlaylistBtn.classList.add('bg-red-500');
+    addToPlaylistBtn.classList.add('bg-red-900/30');
 
     setTimeout(() => {
-      addToPlaylistBtn.innerHTML = `
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-        </svg>
-        Add to Playlist
-      `;
-      addToPlaylistBtn.classList.remove('bg-red-500');
-      addToPlaylistBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+      addToPlaylistBtn.innerHTML = originalHTML;
+      addToPlaylistBtn.classList.remove('bg-red-900/30');
       addToPlaylistBtn.disabled = false;
     }, 2000);
   }
@@ -172,11 +225,13 @@ async function reloadIframeInOriginalTab(sourceTabId) {
  */
 async function playNow() {
   playNowBtn.disabled = true;
+  const originalHTML = playNowBtn.innerHTML;
+
   playNowBtn.innerHTML = `
-    <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
     </svg>
-    Opening...
+    <span>Opening...</span>
   `;
 
   // Get current tab ID for reloading iframe
@@ -208,12 +263,7 @@ async function playNow() {
     // Close popup
     window.close();
   } else {
-    playNowBtn.innerHTML = `
-      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M8 5v14l11-7z"/>
-      </svg>
-      Play Now
-    `;
+    playNowBtn.innerHTML = originalHTML;
     playNowBtn.disabled = false;
   }
 }
@@ -255,11 +305,13 @@ async function clearPlaylist() {
   }
 
   clearPlaylistBtn.disabled = true;
+  const originalHTML = clearPlaylistBtn.innerHTML;
+
   clearPlaylistBtn.innerHTML = `
     <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
     </svg>
-    Clearing...
+    <span>Clearing...</span>
   `;
 
   await chrome.runtime.sendMessage({ cmd: MESSAGES.CLEAR_PLAYLIST });
@@ -267,12 +319,7 @@ async function clearPlaylist() {
   // Refresh UI
   await init();
 
-  clearPlaylistBtn.innerHTML = `
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-    </svg>
-    Clear Playlist
-  `;
+  clearPlaylistBtn.innerHTML = originalHTML;
   clearPlaylistBtn.disabled = false;
 }
 
