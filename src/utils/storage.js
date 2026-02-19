@@ -123,3 +123,33 @@ export async function updateBadge() {
     await chrome.action.setBadgeText({ text: '' });
   }
 }
+
+/**
+ * Get last saved volume (default: 1)
+ */
+export async function getVolume() {
+  const result = await chrome.storage.local.get('playerVolume');
+  return result.playerVolume !== undefined ? result.playerVolume : 1;
+}
+
+/**
+ * Save volume preference
+ */
+export async function setVolume(volume) {
+  await chrome.storage.local.set({ playerVolume: volume });
+}
+
+/**
+ * Get last saved volume before mute
+ */
+export async function getPreviousVolume() {
+  const result = await chrome.storage.local.get('playerPreviousVolume');
+  return result.playerPreviousVolume !== undefined ? result.playerPreviousVolume : 0.5;
+}
+
+/**
+ * Save volume before mute
+ */
+export async function setPreviousVolume(volume) {
+  await chrome.storage.local.set({ playerPreviousVolume: volume });
+}

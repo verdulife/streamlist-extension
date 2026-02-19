@@ -82,3 +82,24 @@ observer.observe(document.documentElement, {
   childList: true,
   subtree: true
 });
+
+// Listen for messages from popup/background
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.cmd === 'reload_iframe') {
+    // Reload all iframes to stop video playback
+    const iframes = document.querySelectorAll('iframe');
+    let reloaded = 0;
+    
+    iframes.forEach(iframe => {
+      try {
+        iframe.src = iframe.src;
+        reloaded++;
+      } catch (error) {
+        console.log('Could not reload iframe:', error);
+      }
+    });
+
+    console.log(`🔄 Reloaded ${reloaded} iframes`);
+    sendResponse({ success: true, reloaded });
+  }
+});

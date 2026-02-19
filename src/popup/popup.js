@@ -146,6 +146,28 @@ async function addToPlaylist() {
 }
 
 /**
+ * Find existing playlist tab
+ */
+async function findPlaylistTab() {
+  const playlistUrl = chrome.runtime.getURL('src/playlist/playlist.html');
+  const tabs = await chrome.tabs.query({ url: playlistUrl });
+  return tabs.length > 0 ? tabs[0] : null;
+}
+
+/**
+ * Reload iframe in original tab
+ */
+async function reloadIframeInOriginalTab(sourceTabId) {
+  try {
+    await chrome.tabs.sendMessage(sourceTabId, {
+      cmd: 'reload_iframe'
+    });
+  } catch (error) {
+    console.log('Could not reload iframe in original tab:', error);
+  }
+}
+
+/**
  * Play video now (add and open playlist)
  */
 async function playNow() {
@@ -157,13 +179,33 @@ async function playNow() {
     Opening...
   `;
 
+  // Get current tab ID for reloading iframe
+  const currentTab = await chrome.tabs.query({ active: true, currentWindow: true });
+  const sourceTabId = currentTab[0].id;
+
   const response = await chrome.runtime.sendMessage({
     cmd: MESSAGES.PLAY_NOW,
     data: { video: currentVideo }
   });
 
   if (response.success) {
-    // Close popup (it will close automatically when new tab opens)
+    // Find or create playlist tab
+    let playlistTab = await findPlaylistTab();
+    
+    if (!playlistTab) {
+      // Create new playlist tab
+      const playlistUrl = chrome.runtime.getURL('src/playlist/playlist.html');
+      playlistTab = await chrome.tabs.create({ url: playlistUrl });
+    } else {
+      // Focus existing playlist tab
+      await chrome.tabs.update(playlistTab.id, { active: true });
+      await chrome.windows.update(playlistTab.windowId, { focused: true });
+    }
+
+    // Reload iframe in original tab
+    await reloadIframeInOriginalTab(sourceTabId);
+
+    // Close popup
     window.close();
   } else {
     playNowBtn.innerHTML = `
@@ -180,8 +222,27 @@ async function playNow() {
  * Open playlist page
  */
 async function openPlaylist() {
-  const playlistUrl = chrome.runtime.getURL('src/playlist/playlist.html');
-  await chrome.tabs.create({ url: playlistUrl });
+  // Get current tab ID for reloading iframe
+  const currentTab = await chrome.tabs.query({ active: true, currentWindow: true });
+  const sourceTabId = currentTab[0].id;
+
+  // Find or create playlist tab
+  let playlistTab = await findPlaylistTab();
+  
+  if (!playlistTab) {
+    // Create new playlist tab
+    const playlistUrl = chrome.runtime.getURL('src/playlist/playlist.html');
+    playlistTab = await chrome.tabs.create({ url: playlistUrl });
+  } else {
+    // Focus existing playlist tab
+    await chrome.tabs.update(playlistTab.id, { active: true });
+    await chrome.windows.update(playlistTab.windowId, { focused: true });
+  }
+
+  // Reload iframe in original tab
+  await reloadIframeInOriginalTab(sourceTabId);
+
+  // Close popup
   window.close();
 }
 
