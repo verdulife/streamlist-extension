@@ -40,45 +40,10 @@
 
     // Override appendBuffer to capture data
     sourceBuffer.appendBuffer = function (data) {
-      console.log(`📊 appendBuffer called: ${data.byteLength} bytes, mimeType: ${mimeType}`);
-
-      // Notify content script about the segment
-      try {
-        // Convert ArrayBuffer to Blob for later use
-        const blob = new Blob([data], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-
-        // Send message to content script
-        window.postMessage({
-          type: 'MSE_SEGMENT_CAPTURED',
-          data: {
-            mimeType,
-            size: data.byteLength,
-            blobUrl: url,
-            mediaSourceId: this._interceptorId,
-            bufferId: sourceBuffer._bufferId,
-            timestamp: Date.now()
-          }
-        }, '*');
-
-        // Store segment info
-        if (!capturedSegments.has(mimeType)) {
-          capturedSegments.set(mimeType, []);
-        }
-        capturedSegments.get(mimeType).push({
-          url,
-          size: data.byteLength,
-          timestamp: Date.now()
-        });
-
-        // Auto-cleanup old blob URLs to prevent memory leaks
-        setTimeout(() => {
-          URL.revokeObjectURL(url);
-        }, 60000); // 1 minute
-
-      } catch (error) {
-        console.error('Error capturing MSE segment:', error);
-      }
+      // NOTE: MSE segment interception turned off for performance reasons
+      // console.log(`📊 appendBuffer called: ${data.byteLength} bytes, mimeType: ${mimeType}`);
+      // This was cloning blobs and sending postMessages on EVERY chunk, crashing the browser on long videos.
+      // Re-enable when building out the explicit 'record/download HLS' feature.
 
       // Call original method
       return originalAppendBuffer.call(this, data);

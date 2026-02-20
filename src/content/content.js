@@ -34,6 +34,8 @@ window.addEventListener('message', (event) => {
   }
 });
 
+const detectedVideos = new Set();
+
 // Detect regular video elements
 function detectVideoElements() {
   const videos = document.querySelectorAll('video[src], video source[src]');
@@ -41,8 +43,9 @@ function detectVideoElements() {
   videos.forEach(video => {
     const src = video.src || video.querySelector('source')?.src;
 
-    if (src && src.startsWith('http')) {
+    if (src && src.startsWith('http') && !detectedVideos.has(src)) {
       console.log('📹 Video element detected:', src);
+      detectedVideos.add(src); // Prevent duplicate detection spam
 
       chrome.runtime.sendMessage({
         cmd: MESSAGES.VIDEO_DETECTED,
@@ -89,7 +92,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Reload all iframes to stop video playback
     const iframes = document.querySelectorAll('iframe');
     let reloaded = 0;
-    
+
     iframes.forEach(iframe => {
       try {
         iframe.src = iframe.src;

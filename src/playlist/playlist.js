@@ -1,11 +1,14 @@
 import Hls from "hls.js";
-import { getVideos, getCurrentIndex, setCurrentIndex, removeVideo, getVolume, setVolume, getPreviousVolume, setPreviousVolume } from "../utils/storage.js";
+import { getVideos, getCurrentIndex, setCurrentIndex, removeVideo, getVolume, setVolume, getPreviousVolume, setPreviousVolume, saveVideos } from "../utils/storage.js";
 import { VIDEO_TYPES, STORAGE_KEYS } from "../utils/constants.js";
+import { castManager } from "./cast.js";
 
 const pageTitle = document.querySelector("title");
 const videoPlayer = document.getElementById("videoPlayer");
 const videoBlur = document.getElementById("videoBlur");
 const playlistContainer = document.getElementById("playlist");
+const videoContainer = document.getElementById("videoContainer");
+const fullscreenBtn = document.getElementById("fullscreenBtn");
 
 const MOCK_M3U8_URL = "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8";
 
@@ -14,13 +17,16 @@ let videos = [];
 let currentIndex = 0;
 let hlsPlayer = null;
 let hlsBlur = null;
+let draggedItemIndex = null;
 
 function videoPlay() {
+  if (castManager.isCasting) return castManager.playOrPause();
   videoPlayer.play();
   videoBlur.play();
 }
 
 function videoPause() {
+  if (castManager.isCasting) return castManager.playOrPause();
   videoPlayer.pause();
   videoBlur.pause();
 }
@@ -34,6 +40,8 @@ async function init() {
   try {
     videos = await getVideos();
     currentIndex = await getCurrentIndex();
+
+    await castManager.init(videoPlayer);
 
     if (videos.length === 0) {
       showEmptyMessage();
@@ -51,16 +59,22 @@ async function init() {
 
 async function loadVideoAtIndex(index) {
   const video = videos[index];
+  if (!video) return;
 
   pageTitle.textContent = video.title;
   updateVideoInfo();
   loadVideo(video);
+  renderPlaylist();
 }
 
 function loadVideo(video) {
   const { url, manifest, type } = video;
   const videoUrl = manifest || url;
-  // const videoUrl = MOCK_M3U8_URL;
+
+  if (castManager.isCasting) {
+    castManager.loadMedia(video);
+    return;
+  }
 
   if (hlsPlayer) {
     hlsPlayer.destroy();
@@ -115,22 +129,26 @@ function renderPlaylist() {
 
   const itemsContainer = document.createElement('div');
   itemsContainer.className = 'overflow-y-auto';
+
   videos.forEach((video, index) => {
     const item = document.createElement('div');
-    item.className = `px-3 py-6 border-b border-neutral-900 cursor-pointer transition-colors ${index === currentIndex ? 'bg-neutral-800' : 'hover:bg-neutral-900'
+    const isActive = index === currentIndex;
+
+    item.className = `relative px-3 py-6 border-b border-neutral-900 cursor-pointer transition-colors ${isActive ? 'bg-neutral-900/50' : 'hover:bg-neutral-900'
       }`;
     item.dataset.index = index;
 
     item.innerHTML = /* html */`
-      <div class="flex gap-3 items-center justify-between">
+      <div class="flex gap-3 items-center justify-between select-none">
         <div class="flex gap-3 flex-1 min-w-0">
-          <div class="w-12 h-9 flex-shrink-0 rounded bg-neutral-700 flex items-center justify-center">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z"/>
+          <div draggable="true" class="cursor-grab hover:text-white flex-shrink-0 flex items-center justify-center text-neutral-500 drag-handle" title="Drag to reorder">
+            <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
             </svg>
           </div>
-          <div class="min-w-0">
-            <p class="text-[14px] font-medium line-clamp-3">${video.title || 'Untitled'}</p>
+          <div class="min-w-0 flex items-center gap-2">
+            ${isActive ? '<div class="active-dot flex-shrink-0"></div>' : ''}
+            <p class="text-[14px] font-medium line-clamp-3 ${isActive ? 'text-white' : 'text-neutral-300'}">${video.title || 'Untitled'}</p>
           </div>
         </div>
         <button class="delete-btn flex-shrink-0 p-1 rounded hover:bg-red-900/30 transition-colors" data-video-id="${video.id}" title="Delete">
@@ -141,8 +159,80 @@ function renderPlaylist() {
       </div>
     `;
 
+    // Drag and Drop event listeners
+    item.addEventListener('dragstart', (e) => {
+      if (!e.target.closest('.drag-handle')) {
+        e.preventDefault();
+        return;
+      }
+      draggedItemIndex = index;
+      e.dataTransfer.effectAllowed = 'move';
+      // Slight delay to allow UI to add class before browser screenshots it for drag visual
+      setTimeout(() => item.classList.add('opacity-50'), 0);
+    });
+
+    item.addEventListener('dragover', (e) => {
+      e.preventDefault(); // Necessary to allow dropping
+      e.dataTransfer.dropEffect = 'move';
+
+      const bounding = item.getBoundingClientRect();
+      const offset = e.clientY - bounding.top;
+
+      // Determine if dragging over top or bottom half
+      if (offset > bounding.height / 2) {
+        item.classList.add('border-b-2', 'border-b-blue-500');
+        item.classList.remove('border-t-2', 'border-t-blue-500');
+      } else {
+        item.classList.add('border-t-2', 'border-t-blue-500');
+        item.classList.remove('border-b-2', 'border-b-blue-500');
+      }
+    });
+
+    item.addEventListener('dragleave', () => {
+      item.classList.remove('border-t-2', 'border-t-blue-500', 'border-b-2', 'border-b-blue-500');
+    });
+
+    item.addEventListener('drop', (e) => {
+      e.preventDefault();
+      item.style.borderTop = '';
+      item.style.borderBottom = '';
+
+      if (draggedItemIndex === null || draggedItemIndex === index) return;
+
+      const bounding = item.getBoundingClientRect();
+      const offset = e.clientY - bounding.top;
+
+      // Calculate new index
+      let targetIndex = index;
+      if (offset > bounding.height / 2) {
+        targetIndex++; // Drop after
+      }
+
+      // Adjust target index if dragging down
+      if (draggedItemIndex < targetIndex) {
+        targetIndex--;
+      }
+
+      reorderVideos(draggedItemIndex, targetIndex);
+    });
+
+    item.addEventListener('dragend', () => {
+      item.classList.remove('opacity-50');
+      draggedItemIndex = null;
+
+      // Clean up styles on all items just in case
+      const allItems = itemsContainer.querySelectorAll('[draggable]');
+      allItems.forEach(el => {
+        el.style.borderTop = '';
+        el.style.borderBottom = '';
+      });
+    });
+
     item.addEventListener('click', (e) => {
       if (e.target.closest('.delete-btn')) return; // Don't play if clicking delete
+      // Prevent playing if we are interacting with the drag handle. Handled natively by drag API if working properly, 
+      // but just to be safe.
+      if (e.target.closest('.drag-handle')) return;
       playVideoByIndex(index);
     });
 
@@ -156,6 +246,28 @@ function renderPlaylist() {
   });
 
   playlistContainer.appendChild(itemsContainer);
+}
+
+async function reorderVideos(fromIndex, toIndex) {
+  if (fromIndex === toIndex) return;
+
+  const [movedItem] = videos.splice(fromIndex, 1);
+  videos.splice(toIndex, 0, movedItem);
+
+  // Update currentIndex logic
+  if (currentIndex === fromIndex) {
+    currentIndex = toIndex;
+  } else if (fromIndex < currentIndex && toIndex >= currentIndex) {
+    currentIndex--;
+  } else if (fromIndex > currentIndex && toIndex <= currentIndex) {
+    currentIndex++;
+  }
+
+  await setCurrentIndex(currentIndex);
+  await saveVideos(videos);
+
+  renderPlaylist();
+  updateNextButtonDisplay();
 }
 
 async function playVideoByIndex(index) {
@@ -204,6 +316,26 @@ function showEmptyMessage() {
   pageTitle.textContent = "No videos in playlist";
 }
 
+function showCastTooltip(message, duration = 4000) {
+  const tooltip = document.getElementById('castTooltip');
+  if (!tooltip) return;
+
+  // Clear existing content except the arrow
+  const arrow = tooltip.querySelector('div');
+  tooltip.textContent = message;
+  if (arrow) tooltip.appendChild(arrow);
+
+  // Animate in
+  tooltip.classList.remove('opacity-0', 'translate-y-2', 'pointer-events-none');
+
+  // Remove after duration
+  if (tooltip._timeout) clearTimeout(tooltip._timeout);
+  tooltip._timeout = setTimeout(() => {
+    tooltip.classList.add('opacity-0', 'translate-y-2', 'pointer-events-none');
+    delete tooltip._timeout;
+  }, duration);
+}
+
 function listenForMessages() {
   chrome.runtime.onMessage.addListener(async (message, _, sendResponse) => {
     const { cmd } = message;
@@ -219,12 +351,12 @@ function listenForMessages() {
       // For play_now, reload everything and force load index 0
       videos = await getVideos();
       currentIndex = await getCurrentIndex(); // Should be 0
-      
+
       if (videos.length > 0) {
         await loadVideoAtIndex(currentIndex);
         renderPlaylist();
       }
-      
+
       updateNextButtonDisplay();
       sendResponse({ received: true });
     }
@@ -322,13 +454,14 @@ function updateVideoInfo() {
 
 // Player Controls
 async function setupPlayerControls() {
-  const progressBar = document.getElementById("progressBar");
+  const progressBarContainer = document.getElementById("progressBarContainer");
+  const progressBarProgress = document.getElementById("progressBarProgress");
+  const progressBarBuffer = document.getElementById("progressBarBuffer");
   const playBtn = document.getElementById("playBtn");
   const pauseBtn = document.getElementById("pauseBtn");
   const volumeBtn = document.getElementById("volumeBtn");
   const muteBtn = document.getElementById("muteBtn");
   const volumeSlider = document.getElementById("volumeSlider");
-  const fullscreenBtn = document.getElementById("fullscreenBtn");
   const rewindBtn = document.getElementById("rewindBtn");
   const forwardBtn = document.getElementById("forwardBtn");
   const nextBtn = document.getElementById("nextBtn");
@@ -337,6 +470,7 @@ async function setupPlayerControls() {
   const totalTimeEl = document.getElementById("totalTime");
   const videoPlayer = document.getElementById("videoPlayer");
   const videoFooter = document.getElementById("videoFooter");
+  const castBtn = document.getElementById("castBtn");
 
   // Track if user is dragging the progress bar
   let isDragging = false;
@@ -348,13 +482,51 @@ async function setupPlayerControls() {
   updateVolumeUI(lastVolume, volumeBtn, muteBtn);
 
   // Helper functions for time display
-  function updateCurrentTime() {
-    currentTimeEl.textContent = formatTime(videoPlayer.currentTime);
+  function updateCurrentTime(timeSecs = videoPlayer.currentTime) {
+    currentTimeEl.textContent = formatTime(timeSecs);
   }
 
-  function updateTotalTime() {
-    totalTimeEl.textContent = formatTime(videoPlayer.duration);
+  function updateTotalTime(totalSecs = videoPlayer.duration) {
+    totalTimeEl.textContent = formatTime(totalSecs);
   }
+
+  // --- CAST MANAGER INTEGRATION ---
+  castBtn.addEventListener("click", () => {
+    castManager.toggleCastMenu();
+  });
+
+  castManager.onStateChange = (isPlaying) => {
+    if (isPlaying) {
+      playBtn.classList.add("hidden");
+      pauseBtn.classList.remove("hidden");
+    } else {
+      pauseBtn.classList.add("hidden");
+      playBtn.classList.remove("hidden");
+    }
+  };
+
+  castManager.onTimeUpdate = (currentTime, totalTime) => {
+    if (!isDragging) {
+      const rect = progressBarContainer.getBoundingClientRect();
+      const rawPercent = (currentTime / totalTime) * 100 || 0;
+      const steppedPercent = getSteppedWidthPercent(rawPercent, rect.width);
+
+      progressBarProgress.style.width = `${steppedPercent}%`;
+      updateCurrentTime(currentTime);
+      updateTotalTime(totalTime);
+    }
+  };
+
+  castManager.onVolumeChange = (volume, isMuted) => {
+    const vol = isMuted ? 0 : volume;
+    volumeSlider.value = vol;
+    updateVolumeUI(vol, volumeBtn, muteBtn);
+  };
+
+  castManager.onError = (errorMsg) => {
+    showCastTooltip(errorMsg);
+  };
+  // --------------------------------
 
   // Restaurar volumen cuando se carga un nuevo video
   videoPlayer.addEventListener("loadedmetadata", async () => {
@@ -366,90 +538,182 @@ async function setupPlayerControls() {
     updateNextButtonUI();
     updateTotalTime();
     updateVideoInfo();
+
+    // Reset widths
+    progressBarProgress.style.width = "0%";
+    progressBarBuffer.style.width = "0%";
   });
 
+  // Helper to calculate stepped width
+  function getSteppedWidthPercent(rawPercent, totalWidth) {
+    if (!totalWidth) return rawPercent;
+
+    // Get CSS variables for grid block size
+    const computedStyle = getComputedStyle(progressBarContainer);
+    const size = parseFloat(computedStyle.getPropertyValue('--size')) || 3;
+    const gap = parseFloat(computedStyle.getPropertyValue('--gap')) || 0.5;
+    const stepSizePx = size + gap;
+
+    // Calculate how many full steps fit in the raw width
+    const rawWidthPx = (rawPercent / 100) * totalWidth;
+    const numSteps = Math.round(rawWidthPx / stepSizePx);
+
+    // Convert stepped pixels back to percentage
+    const steppedWidthPx = numSteps * stepSizePx;
+    return (steppedWidthPx / totalWidth) * 100;
+  }
+
   // Progress bar
-  progressBar.addEventListener("mousedown", () => {
+  function updateProgressFromEvent(e) {
+    const duration = castManager.isCasting ? (castManager.player?.duration || 0) : videoPlayer.duration;
+    if (!duration) return;
+
+    const rect = progressBarContainer.getBoundingClientRect();
+    let pos = (e.clientX - rect.left) / rect.width;
+    pos = Math.max(0, Math.min(1, pos));
+
+    const targetTime = pos * duration;
+
+    // Apply time directly based on raw pos so seeking is accurate
+    if (castManager.isCasting) {
+      castManager.seek(targetTime);
+    } else {
+      videoPlayer.currentTime = targetTime;
+    }
+
+    // Visually step the progress bar
+    const steppedPercent = getSteppedWidthPercent(pos * 100, rect.width);
+    progressBarProgress.style.width = `${steppedPercent}%`;
+    updateCurrentTime(targetTime);
+  }
+
+  progressBarContainer.addEventListener("mousedown", (e) => {
     isDragging = true;
+    updateProgressFromEvent(e);
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (isDragging) {
+      updateProgressFromEvent(e);
+    }
   });
 
   document.addEventListener("mouseup", () => {
     isDragging = false;
   });
 
-  progressBar.addEventListener("input", (e) => {
-    const time = (parseFloat(e.target.value) / 100) * videoPlayer.duration;
-    videoPlayer.currentTime = time;
-  });
-
   // Actualizar barra de progreso con timeupdate para fluidez natural
   videoPlayer.addEventListener("timeupdate", () => {
+    if (castManager.isCasting) return;
     if (!isDragging && videoPlayer.duration) {
-      const percent = (videoPlayer.currentTime / videoPlayer.duration) * 100 || 0;
-      progressBar.value = percent;
-      updateCurrentTime();
+      const rect = progressBarContainer.getBoundingClientRect();
+      const rawPercent = (videoPlayer.currentTime / videoPlayer.duration) * 100 || 0;
+      const steppedPercent = getSteppedWidthPercent(rawPercent, rect.width);
+
+      progressBarProgress.style.width = `${steppedPercent}%`;
+      updateCurrentTime(videoPlayer.currentTime);
+    }
+  });
+
+  // Actualizar el buffer visualmente
+  videoPlayer.addEventListener("progress", () => {
+    if (castManager.isCasting) return; // Buffer metrics are hard to get from basic cast SDK without custom receivers
+    if (videoPlayer.duration > 0 && videoPlayer.buffered.length > 0) {
+      const rect = progressBarContainer.getBoundingClientRect();
+      const bufferedEnd = videoPlayer.buffered.end(videoPlayer.buffered.length - 1);
+      const rawPercent = (bufferedEnd / videoPlayer.duration) * 100;
+      const steppedPercent = getSteppedWidthPercent(rawPercent, rect.width);
+
+      progressBarBuffer.style.width = `${steppedPercent}%`;
     }
   });
 
   // Play/Pause buttons
   playBtn.addEventListener("click", () => {
     videoPlay();
-    playBtn.classList.add("hidden");
-    pauseBtn.classList.remove("hidden");
+    if (!castManager.isCasting) {
+      playBtn.classList.add("hidden");
+      pauseBtn.classList.remove("hidden");
+    }
   });
 
   pauseBtn.addEventListener("click", () => {
     videoPause();
-    pauseBtn.classList.add("hidden");
-    playBtn.classList.remove("hidden");
+    if (!castManager.isCasting) {
+      pauseBtn.classList.add("hidden");
+      playBtn.classList.remove("hidden");
+    }
   });
 
   videoPlayer.addEventListener("play", () => {
+    if (castManager.isCasting) return;
     playBtn.classList.add("hidden");
     pauseBtn.classList.remove("hidden");
   });
 
   videoPlayer.addEventListener("pause", () => {
+    if (castManager.isCasting) return;
     pauseBtn.classList.add("hidden");
     playBtn.classList.remove("hidden");
   });
 
   // Rewind/Forward buttons
   rewindBtn.addEventListener("click", () => {
+    if (castManager.isCasting && castManager.player) {
+      castManager.seek(Math.max(0, castManager.player.currentTime - 10));
+      return;
+    }
     videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10);
   });
 
   forwardBtn.addEventListener("click", () => {
+    if (castManager.isCasting && castManager.player) {
+      castManager.seek(Math.min(castManager.player.duration, castManager.player.currentTime + 10));
+      return;
+    }
     videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10);
   });
 
   // Volume controls
   volumeSlider.addEventListener("input", async (e) => {
     const volume = parseFloat(e.target.value);
-    videoPlayer.volume = volume;
     lastVolume = volume;
     await setVolume(volume);
+
+    if (castManager.isCasting) {
+      castManager.setVolume(volume);
+    } else {
+      videoPlayer.volume = volume;
+    }
     updateVolumeUI(volume, volumeBtn, muteBtn);
   });
 
   volumeBtn.addEventListener("click", async () => {
     await setPreviousVolume(lastVolume);
-    videoPlayer.volume = 0;
+    if (castManager.isCasting) {
+      castManager.toggleMute();
+    } else {
+      videoPlayer.volume = 0;
+    }
     volumeSlider.value = 0;
     updateVolumeUI(0, volumeBtn, muteBtn);
   });
 
   muteBtn.addEventListener("click", async () => {
     const previousVolume = await getPreviousVolume();
-    videoPlayer.volume = previousVolume;
-    volumeSlider.value = previousVolume;
     lastVolume = previousVolume;
     await setVolume(previousVolume);
+
+    if (castManager.isCasting) {
+      castManager.toggleMute();
+    } else {
+      videoPlayer.volume = previousVolume;
+    }
+    volumeSlider.value = previousVolume;
     updateVolumeUI(previousVolume, volumeBtn, muteBtn);
   });
 
   // Fullscreen
-  const videoContainer = document.getElementById("videoContainer");
   let clickTimeout;
   let autoHideTimeout;
   let isMouseMoving = false;
@@ -558,7 +822,7 @@ async function setupPlayerControls() {
   updateCurrentTime();
 
   // Keyboard shortcuts
-  document.addEventListener("keydown", (e) => {
+  document.addEventListener("keydown", async (e) => {
     // Don't trigger if user is typing in an input
     if (e.target.tagName === "INPUT" && e.target.type !== "range") return;
 
@@ -588,7 +852,14 @@ async function setupPlayerControls() {
       // Arrow keys for seeking and volume
       case "arrowleft":
         e.preventDefault();
-        if (e.ctrlKey) {
+        if (e.altKey) {
+          // Alt + Left: Previous video
+          if (currentIndex > 0) {
+            currentIndex--;
+            await setCurrentIndex(currentIndex);
+            await loadVideoAtIndex(currentIndex);
+          }
+        } else if (e.ctrlKey) {
           // Ctrl + Left: -30 seconds
           videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 30);
         } else {
@@ -599,7 +870,14 @@ async function setupPlayerControls() {
 
       case "arrowright":
         e.preventDefault();
-        if (e.ctrlKey) {
+        if (e.altKey) {
+          // Alt + Right: Next video
+          if (currentIndex < videos.length - 1) {
+            currentIndex++;
+            await setCurrentIndex(currentIndex);
+            await loadVideoAtIndex(currentIndex);
+          }
+        } else if (e.ctrlKey) {
           // Ctrl + Right: +30 seconds
           videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 30);
         } else {
@@ -628,6 +906,18 @@ async function setupPlayerControls() {
         lastVolume = newVolumeDown;
         setVolume(newVolumeDown);
         updateVolumeUI(newVolumeDown, volumeBtn, muteBtn);
+        break;
+
+      // Ctrl + Enter or F: Toggle Fullscreen
+      case "enter":
+        if (e.ctrlKey) {
+          e.preventDefault();
+          fullscreenBtn.click();
+        }
+        break;
+      case "f":
+        e.preventDefault();
+        fullscreenBtn.click();
         break;
     }
   });

@@ -41,25 +41,28 @@ export async function addVideo(video) {
 }
 
 /**
- * Add a video to the start of the playlist (for Play Now)
+ * Add a video to the end of the playlist and set it as current (for Play Now)
  */
-export async function addVideoAtStart(video) {
+export async function addVideoAndPlay(video) {
   const videos = await getVideos();
 
   // Check if video already exists (by URL)
-  const exists = videos.some(v => v.url === video.url || v.manifest === video.manifest);
-  if (exists) {
-    console.log('Video already in playlist');
-    return false;
+  const existingIndex = videos.findIndex(v => v.url === video.url || v.manifest === video.manifest);
+
+  if (existingIndex !== -1) {
+    console.log('Video already in playlist, jumping to it');
+    await setCurrentIndex(existingIndex);
+    return true;
   }
 
-  videos.unshift({
+  videos.push({
     id: crypto.randomUUID(),
     timestamp: Date.now(),
     ...video
   });
 
   await saveVideos(videos);
+  await setCurrentIndex(videos.length - 1); // Set the new video as current
   return true;
 }
 

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg id="Capa_2" data-name="Capa 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 15.74 15.74">
+<svg id="Capa_2" data-name="Capa 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12.49 15.74">
   <defs>
     <style>
       .cls-1 {
@@ -8,23 +8,6 @@
     </style>
   </defs>
   <g id="Capa_1-2" data-name="Capa 1">
-    <g>
-      <rect class="cls-1" y="9.74" width="2.75" height="2.75"/>
-      <rect class="cls-1" y="6.5" width="2.75" height="2.75"/>
-      <rect class="cls-1" y="3.25" width="2.75" height="2.75"/>
-      <rect class="cls-1" x="3.25" y="12.99" width="2.75" height="2.75"/>
-      <rect class="cls-1" x="3.25" y="9.74" width="2.75" height="2.75"/>
-      <rect class="cls-1" x="3.25" y="6.5" width="2.75" height="2.75"/>
-      <rect class="cls-1" x="3.25" y="3.25" width="2.75" height="2.75"/>
-      <rect class="cls-1" x="3.25" width="2.75" height="2.75"/>
-      <rect class="cls-1" x="9.74" y="6.5" width="2.75" height="2.75"/>
-      <rect class="cls-1" x="9.74" y="3.25" width="2.75" height="2.75"/>
-      <rect class="cls-1" x="9.74" y="9.74" width="2.75" height="2.75"/>
-      <rect class="cls-1" x="9.74" width="2.75" height="2.75"/>
-      <rect class="cls-1" x="9.74" y="12.99" width="2.75" height="2.75"/>
-      <rect class="cls-1" x="12.99" y="6.5" width="2.75" height="2.75"/>
-      <rect class="cls-1" x="12.99" y="3.25" width="2.75" height="2.75"/>
-      <rect class="cls-1" x="12.99" y="9.74" width="2.75" height="2.75"/>
-    </g>
+    <path class="cls-1" d="M2.75,9.74v2.75H0v-2.75h2.75ZM0,6.5v2.75h2.75v-2.75H0ZM0,3.25v2.75h2.75v-2.75H0ZM0,12.99v2.75h2.75v-2.75H0ZM0,0v2.75h2.75V0H0ZM9.74,6.5v2.75h2.75v-2.75h-2.75ZM9.74,3.25v2.75h2.75v-2.75h-2.75ZM9.74,9.74v2.75h2.75v-2.75h-2.75ZM9.74,0v2.75h2.75V0h-2.75ZM9.74,12.99v2.75h2.75v-2.75h-2.75Z"/>
   </g>
 </svg>

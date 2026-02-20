@@ -2,7 +2,7 @@ import { MESSAGES } from '../utils/constants.js';
 import {
   getVideos,
   addVideo,
-  addVideoAtStart,
+  addVideoAndPlay,
   removeVideo,
   clearAllVideos,
   updateBadge,
@@ -217,12 +217,10 @@ async function handlePlayNow(data, sendResponse) {
         return;
       }
 
-      // Add to start of playlist
-      const added = await addVideoAtStart(currentVideo);
-      
+      // Add to playlist and play
+      const added = await addVideoAndPlay(currentVideo);
+
       if (added) {
-        // Set to play from index 0
-        await setCurrentIndex(0);
         await updateBadge();
 
         // Notify playlist tab if open
@@ -234,12 +232,10 @@ async function handlePlayNow(data, sendResponse) {
 
       sendResponse({ success: added });
     } else {
-      // Add to start of playlist
-      const added = await addVideoAtStart(video);
-      
+      // Add to playlist and play
+      const added = await addVideoAndPlay(video);
+
       if (added) {
-        // Set to play from index 0
-        await setCurrentIndex(0);
         await updateBadge();
 
         // Notify playlist tab if open
@@ -341,6 +337,13 @@ async function openPlaylistTab() {
 // Clean up tab info when tabs are closed
 chrome.tabs.onRemoved.addListener((tabId) => {
   tabInfo.delete(tabId);
+});
+
+// Clean up tab info when tab navigates to a new URL
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.url) {
+    tabInfo.delete(tabId);
+  }
 });
 
 // Handle extension icon click (open popup is default, but we can add logic here)

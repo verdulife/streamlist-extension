@@ -14,20 +14,22 @@
     <img src="/icons/logo.svg" alt="Streamlist Logo" class="h-5">
   </header>
 
-  <section class="grid grid-cols-[1fr_400px] flex-1">
+  <section class="grid grid-cols-[auto_550px] flex-1">
     <main class="size-full flex flex-col">
       <div id="videoContainer"
         class="relative w-full aspect-video bg-black group/player flex items-center justify-center">
-        <video class="absolute inset-10 aspect-video scale-105 blur-3xl opacity-25" id="videoBlur" muted></video>
+        <video class="absolute inset-10 aspect-video scale-105 blur-3xl opacity-25 pointer-events-none" id="videoBlur" muted></video>
         <video class="relative w-full aspect-video" id="videoPlayer">
         </video>
 
         <footer
-          class="absolute inset-0 top-auto opacity-0 group-hover/player:opacity-100 transition-opacity p-4 flex flex-col justify-end gap-2"
+          class="absolute inset-0 top-auto opacity-0 group-hover/player:opacity-100 transition-opacity p-4 flex flex-col justify-end gap-4"
           id="videoFooter">
-          <div>
-            <input type="range" id="progressBar" class="w-full accent-neutral-200" step="any" min="0" max="100"
-              value="0">
+
+          <div id="progressBarContainer" class="relative bg-neutral-950/70 w-full cursor-pointer">
+            <div id="progressBarBuffer" class="absolute h-full top-0 left-0 w-0 bg-neutral-600"></div>
+            <div id="progressBarProgress" class="absolute h-full top-0 left-0 w-0 bg-neutral-200"></div>
+            <div id="progressBarBg" class="absolute size-full top-0 left-0"></div>
           </div>
 
           <div class="flex justify-between" id="videoControls">
@@ -77,7 +79,16 @@
                   <div
                     class="absolute group-hover/volume:opacity-100 w-8 p-2 flex justify-center items-center bg-neutral-950/70 rounded bottom-[calc(100%+0.25rem)] left-0 opacity-0">
                     <input class="[writing-mode:vertical-lr] [direction:rtl] [vertical-align:middle] accent-neutral-200"
-                      type="range" id="volumeSlider" min="0" max="1" step="0.01">
+                      type="range" id="volumeSlider" min="0" max="1" step="any">
+                  </div>
+                </div>
+
+                <div class="relative flex items-center justify-center">
+                  <button class="size-8 p-2" id="castBtn" title="Cast">
+                    <img class="size-full" src="/icons/cast.svg" alt="Cast">
+                  </button>
+                  <div id="castTooltip" class="absolute bottom-[calc(100%+0.5rem)] right-0 w-48 bg-neutral-800 text-neutral-100 text-xs px-3 py-2 rounded border border-neutral-700 shadow-2xl transition-all duration-300 opacity-0 translate-y-2 pointer-events-none z-50">
+                    <div class="absolute top-full right-3 border-8 border-transparent border-t-neutral-800"></div>
                   </div>
                 </div>
 
