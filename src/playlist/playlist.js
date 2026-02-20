@@ -122,7 +122,7 @@ function renderPlaylist() {
     item.dataset.index = index;
 
     item.innerHTML = /* html */`
-      <div class="flex gap-3 items-center justify-between p">
+      <div class="flex gap-3 items-center justify-between">
         <div class="flex gap-3 flex-1 min-w-0">
           <div class="w-12 h-9 flex-shrink-0 rounded bg-neutral-700 flex items-center justify-center">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -130,7 +130,7 @@ function renderPlaylist() {
             </svg>
           </div>
           <div class="min-w-0">
-            <p class="text-[14px] font-medium">${video.title || 'Untitled'}</p>
+            <p class="text-[14px] font-medium line-clamp-3">${video.title || 'Untitled'}</p>
           </div>
         </div>
         <button class="delete-btn flex-shrink-0 p-1 rounded hover:bg-red-900/30 transition-colors" data-video-id="${video.id}" title="Delete">
@@ -211,6 +211,20 @@ function listenForMessages() {
     if (cmd === 'video_added') {
       videos = await getVideos();
       renderPlaylist();
+      updateNextButtonDisplay();
+      sendResponse({ received: true });
+    }
+
+    if (cmd === 'play_now') {
+      // For play_now, reload everything and force load index 0
+      videos = await getVideos();
+      currentIndex = await getCurrentIndex(); // Should be 0
+      
+      if (videos.length > 0) {
+        await loadVideoAtIndex(currentIndex);
+        renderPlaylist();
+      }
+      
       updateNextButtonDisplay();
       sendResponse({ received: true });
     }

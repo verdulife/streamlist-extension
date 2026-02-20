@@ -41,6 +41,29 @@ export async function addVideo(video) {
 }
 
 /**
+ * Add a video to the start of the playlist (for Play Now)
+ */
+export async function addVideoAtStart(video) {
+  const videos = await getVideos();
+
+  // Check if video already exists (by URL)
+  const exists = videos.some(v => v.url === video.url || v.manifest === video.manifest);
+  if (exists) {
+    console.log('Video already in playlist');
+    return false;
+  }
+
+  videos.unshift({
+    id: crypto.randomUUID(),
+    timestamp: Date.now(),
+    ...video
+  });
+
+  await saveVideos(videos);
+  return true;
+}
+
+/**
  * Remove a video by ID
  */
 export async function removeVideo(videoId) {

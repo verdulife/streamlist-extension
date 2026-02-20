@@ -2,6 +2,7 @@ import { MESSAGES } from '../utils/constants.js';
 import {
   getVideos,
   addVideo,
+  addVideoAtStart,
   removeVideo,
   clearAllVideos,
   updateBadge,
@@ -200,24 +201,56 @@ async function handleAddToPlaylist(data, sendResponse) {
 }
 
 /**
- * Play video now (add to playlist and open playlist page)
+ * Play video now (add to start of playlist and open playlist page)
  */
 async function handlePlayNow(data, sendResponse) {
   try {
-    // Add video to playlist first
-    await handleAddToPlaylist(data, () => { });
+    const { video } = data;
 
-    // Get all videos
-    const allVideos = await getVideos();
-    const newVideoIndex = allVideos.length - 1;
+    if (!video) {
+      // Get video from active tab
+      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const currentVideo = activeTab ? tabInfo.get(activeTab.id) : null;
 
-    // Set this as the current playing index
-    await setCurrentIndex(newVideoIndex);
+      if (!currentVideo) {
+        sendResponse({ success: false, error: 'No video detected on this page' });
+        return;
+      }
 
-    // Open or focus playlist tab
-    await openPlaylistTab();
+      // Add to start of playlist
+      const added = await addVideoAtStart(currentVideo);
+      
+      if (added) {
+        // Set to play from index 0
+        await setCurrentIndex(0);
+        await updateBadge();
 
-    sendResponse({ success: true });
+        // Notify playlist tab if open
+        await notifyPlaylistUpdate(MESSAGES.PLAY_NOW, currentVideo);
+      }
+
+      // Open or focus playlist tab
+      await openPlaylistTab();
+
+      sendResponse({ success: added });
+    } else {
+      // Add to start of playlist
+      const added = await addVideoAtStart(video);
+      
+      if (added) {
+        // Set to play from index 0
+        await setCurrentIndex(0);
+        await updateBadge();
+
+        // Notify playlist tab if open
+        await notifyPlaylistUpdate(MESSAGES.PLAY_NOW, video);
+      }
+
+      // Open or focus playlist tab
+      await openPlaylistTab();
+
+      sendResponse({ success: added });
+    }
   } catch (error) {
     console.error('Error playing now:', error);
     sendResponse({ success: false, error: error.message });
