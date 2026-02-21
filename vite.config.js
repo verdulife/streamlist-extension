@@ -1,9 +1,15 @@
 import { defineConfig } from 'vite';
 import { crx } from '@crxjs/vite-plugin';
+import tailwindcss from '@tailwindcss/vite';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 import manifest from './manifest.json';
 
 export default defineConfig({
-  plugins: [crx({ manifest })],
+  plugins: [
+    svelte(),
+    tailwindcss(),
+    crx({ manifest })
+  ],
   build: {
     rollupOptions: {
       input: {

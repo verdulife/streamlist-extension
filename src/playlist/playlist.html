@@ -1,135 +1,16 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Title managed by Svelte -->
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🔴 Streamlist Player</title>
-  <link rel="stylesheet" href="../styles.css">
-  <script type="module" src="./playlist.js"></script>
-</head>
-
-<body class="h-svh bg-neutral-950 text-neutral-200 font-mono flex flex-col overflow-clip">
-  <header class="p-6 border-b border-neutral-900">
-    <img src="/icons/logo.svg" alt="Streamlist Logo" class="h-5">
-  </header>
-
-  <section class="grid grid-cols-[auto_550px] flex-1">
-    <main class="size-full flex flex-col">
-      <div id="videoContainer"
-        class="relative w-full aspect-video bg-black group/player flex items-center justify-center">
-        <video class="absolute inset-10 aspect-video scale-105 blur-3xl opacity-25 pointer-events-none" id="videoBlur" muted></video>
-        <video class="relative w-full aspect-video" id="videoPlayer">
-        </video>
-
-        <footer
-          class="absolute inset-0 top-auto opacity-0 group-hover/player:opacity-100 transition-opacity p-4 flex flex-col justify-end gap-4"
-          id="videoFooter">
-
-          <div id="progressBarContainer" class="relative bg-neutral-950/70 w-full cursor-pointer">
-            <div id="progressBarBuffer" class="absolute h-full top-0 left-0 w-0 bg-neutral-600"></div>
-            <div id="progressBarProgress" class="absolute h-full top-0 left-0 w-0 bg-neutral-200"></div>
-            <div id="progressBarBg" class="absolute size-full top-0 left-0"></div>
-          </div>
-
-          <div class="flex justify-between" id="videoControls">
-            <div class="flex gap-1" id="left">
-              <div class="flex bg-neutral-950/70 rounded items-center" id="playPause">
-                <button class="size-8 p-2" id="playBtn" title="Play">
-                  <img class="size-full" src="/icons/play.svg" alt="Play">
-                </button>
-                <button class="hidden size-8 p-2" id="pauseBtn" title="Pause">
-                  <img class="size-full" src="/icons/pause.svg" alt="Pause">
-                </button>
-
-                <p class="pr-2">
-                  <span id="currentTime"></span>
-                  /
-                  <span id="totalTime"></span>
-                </p>
-              </div>
-
-              <div class="flex bg-neutral-950/70 rounded items-center">
-                <button class="h-8 p-2 flex items-center gap-2" id="rewindBtn" title="-10s">
-                  <img class="size-full" src="/icons/rewind.svg" alt="Rewind 10s">
-                  <span>-10s</span>
-                </button>
-                <button class="h-8 p-2 flex items-center gap-2" id="forwardBtn" title="+10s">
-                  <img class="size-full" src="/icons/foward.svg" alt="Forward 10s">
-                  <span>+10s</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="flex gap-1" id="right">
-              <button class="h-8 p-2 flex bg-neutral-950/70 rounded gap-2" id="nextBtn" title="Next">
-                <img class="h-full aspect-square" src="/icons/next.svg" alt="Next">
-                <span class="max-w-48 truncate" id="truncatedTitle"></span>
-              </button>
-
-              <div class="flex bg-neutral-950/70 rounded">
-                <div class="relative flex group/volume" id="volume">
-                  <button class="size-8 p-2" id="volumeBtn" title="Volume">
-                    <img class="size-full" src="/icons/volume-on.svg" alt="Volume">
-                  </button>
-                  <button class="hidden size-8 p-2" id="muteBtn" title="Mute">
-                    <img class="size-full" src="/icons/volume-off.svg" alt="Volume">
-                  </button>
-
-                  <div
-                    class="absolute group-hover/volume:opacity-100 w-8 p-2 flex justify-center items-center bg-neutral-950/70 rounded bottom-[calc(100%+0.25rem)] left-0 opacity-0">
-                    <input class="[writing-mode:vertical-lr] [direction:rtl] [vertical-align:middle] accent-neutral-200"
-                      type="range" id="volumeSlider" min="0" max="1" step="any">
-                  </div>
-                </div>
-
-                <div class="relative flex items-center justify-center">
-                  <button class="size-8 p-2" id="castBtn" title="Cast">
-                    <img class="size-full" src="/icons/cast.svg" alt="Cast">
-                  </button>
-                  <div id="castTooltip" class="absolute bottom-[calc(100%+0.5rem)] right-0 w-48 bg-neutral-800 text-neutral-100 text-xs px-3 py-2 rounded border border-neutral-700 shadow-2xl transition-all duration-300 opacity-0 translate-y-2 pointer-events-none z-50">
-                    <div class="absolute top-full right-3 border-8 border-transparent border-t-neutral-800"></div>
-                  </div>
-                </div>
-
-                <button class="size-8 p-2" id="fullscreenBtn" title="Fullscreen">
-                  <img class="size-full" src="/icons/fullscreen.svg" alt="Fullscreen">
-                </button>
-              </div>
-            </div>
-          </div>
-        </footer>
-      </div>
-
-      <footer id="videoInfo"
-        class="border-t border-neutral-900 flex-1 p-4 bg-gradient-to-b from-neutral-950 to-neutral-900 flex flex-col">
-        <!-- Title -->
-        <h2 id="videoInfoTitle" class="text-xl font-bold text-neutral-100 line-clamp-2 mb-4">
-          Select a video
-        </h2>
-
-        <div class="flex gap-12 text-sm">
-          <!-- Source -->
-          <div class="flex items-center gap-4">
-            <p class="text-xs text-neutral-500 uppercase tracking-wider">Source</p>
-            <p id="videoInfoUrl" class="text-neutral-400 truncate">
-              —
-            </p>
-          </div>
-
-          <!-- Type -->
-          <div class="flex items-center gap-4">
-            <p class="text-xs text-neutral-500 uppercase tracking-wider">Type</p>
-            <p id="videoInfoType" class="text-neutral-300 flex items-center gap-2 mt-1">
-              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-              —
-            </p>
-          </div>
-      </footer>
-    </main>
-
-    <aside id="playlist" class="border-l border-neutral-900">playlist</aside>
-  </section>
-</body>
-
+  <body
+    class="h-svh bg-neutral-950 text-neutral-200 font-mono flex flex-col overflow-clip m-0 p-0"
+  >
+    <div id="app" class="flex flex-col flex-1 h-full"></div>
+    <script type="module" src="./playlist.js"></script>
+  </body>
 </html>

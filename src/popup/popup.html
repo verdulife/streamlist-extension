@@ -1,99 +1,20 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Video Playlist Player</title>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Video Playlist Player</title>
-  <link rel="stylesheet" href="../styles.css">
-</head>
-
-<body class="w-96 bg-neutral-950 text-neutral-200 font-mono flex flex-col">
-  <!-- Header -->
-  <header class="p-3 border-b border-neutral-900 flex-shrink-0">
-    <div class="flex items-center justify-between">
-      <img src="/icons/logo.svg" alt="Streamlist Logo" class="h-4">
-      <span id="videoCount" class="text-xs bg-neutral-800 text-neutral-300 px-2 py-1 rounded">0 videos</span>
-    </div>
-  </header>
-
-  <main class="flex-1 overflow-y-auto flex flex-col min-h-0">
-    <div class="p-3">
-      <!-- Current Video Info -->
-      <div id="currentVideoInfo" class="mb-3 hidden">
-        <div class="bg-neutral-900 rounded p-2 mb-3">
-          <p class="text-xs text-neutral-500 uppercase tracking-wider mb-1">Current Video</p>
-          <h3 id="videoTitle" class="text-sm font-medium text-neutral-100 truncate mb-1">Video detected</h3>
-          <p id="videoDomain" class="text-xs text-neutral-400 truncate">Loading...</p>
-        </div>
-      </div>
-
-      <!-- No Video Message -->
-      <div id="noVideoMessage" class="mb-3">
-        <div class="bg-neutral-900/50 border border-neutral-800 rounded p-2">
-          <p class="text-xs text-neutral-400">
-            <span class="font-medium block mb-1">No video detected</span>
-            <span class="text-neutral-500">Play a video on this page to capture it</span>
-          </p>
-        </div>
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="space-y-2 mb-3">
-        <button id="addToPlaylistBtn"
-          class="w-full bg-neutral-800 hover:bg-neutral-700 disabled:bg-neutral-900 disabled:cursor-not-allowed text-neutral-100 text-sm py-2 px-3 rounded transition-colors flex items-center justify-center gap-2"
-          disabled>
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          <span>Add to Playlist</span>
-        </button>
-
-        <button id="playNowBtn"
-          class="w-full bg-neutral-800 hover:bg-neutral-700 disabled:bg-neutral-900 disabled:cursor-not-allowed text-neutral-100 text-sm py-2 px-3 rounded transition-colors flex items-center justify-center gap-2"
-          disabled>
-          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z" />
-          </svg>
-          <span>Play Now</span>
-        </button>
-      </div>
-
-      <!-- Divider -->
-      <div class="border-b border-neutral-900 mb-3"></div>
-
-      <!-- Playlist Section -->
-      <div>
-        <p class="text-xs text-neutral-500 uppercase tracking-wider mb-2">Playlist</p>
-        <div id="playlistList" class="space-y-1 max-h-48 overflow-y-auto">
-          <!-- Videos will be added here -->
-        </div>
-        <p id="emptyPlaylistMsg" class="text-xs text-neutral-500 text-center py-3">No videos in playlist</p>
-      </div>
-    </div>
-
-    <!-- Footer Buttons -->
-    <div class="mt-auto p-3 border-t border-neutral-900 space-y-2 flex-shrink-0">
-      <button id="openPlaylistBtn"
-        class="w-full bg-neutral-800 hover:bg-neutral-700 text-neutral-100 text-sm py-2 px-3 rounded transition-colors hidden items-center justify-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-        </svg>
-        <span>Open Playlist</span>
-      </button>
-
-      <button id="clearPlaylistBtn"
-        class="w-full bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-red-400 text-sm py-2 px-3 rounded transition-colors hidden items-center justify-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-        </svg>
-        <span>Clear Playlist</span>
-      </button>
-    </div>
-  </main>
-
-  <script type="module" src="./popup.js"></script>
-</body>
-
+  <body
+    class="w-96 bg-neutral-950 text-neutral-200 font-mono flex flex-col m-0 p-0 overflow-hidden h-auto max-h-[600px]"
+  >
+    <div
+      id="app"
+      class="flex flex-col flex-1 min-h-0 container mx-auto"
+      style="height: 100vh"
+    ></div>
+    <script type="module" src="./popup.js"></script>
+  </body>
 </html>
